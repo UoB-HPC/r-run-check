@@ -1,0 +1,19 @@
+version: "3.3"
+services:
+  r-check-ubuntu:
+    container_name: r-check-ubuntu
+    privileged: false
+    volumes:
+      - "persisted:/root"
+      - "./src/:/root/src:ro"
+    restart: unless-stopped
+    build:
+      context: "./"
+      dockerfile: Dockerfile.ubuntu
+volumes:
+  persisted:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: "/home/tom/scratch/persisted-ubuntu"

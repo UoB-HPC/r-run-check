@@ -1,0 +1,20 @@
+version: "3.3"
+services:
+  r-check:
+    container_name: r-check
+    privileged: false
+    volumes:
+      - "persisted:/root"
+      - "~/CRAN_MIRROR/data/:/srv/R/Repositories:ro"
+      - "./src/:exitq/root/src:ro"
+    restart: unless-stopped
+    build:
+      context: "./"
+      dockerfile: Dockerfile.almalinux
+volumes:
+  persisted:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "/home/tom/scratch/persisted"

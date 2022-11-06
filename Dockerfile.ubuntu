@@ -1,0 +1,82 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update
+
+# # Tools
+RUN apt-get install -y git tmux jq time patch
+
+# # Compilers
+RUN apt-get install -y gcc g++ clang gfortran
+
+# # R check script requirements (psmisc for fuser, Xvfb for X11)
+RUN apt-get install -y xvfb psmisc rsync
+
+# # R build requirements
+RUN apt-get install -y wget make automake cmake file python3 \
+    libreadline-dev libx11-dev libxt-dev libz-dev libbz2-dev liblzma-dev \
+    libpcre2-dev libcurl4-gnutls-dev libicu-dev tcl-dev tk-dev libtre-dev
+
+# # R build requirements: docs needs pdflatex, so we get texlive and the fonts
+RUN apt-get install -y texlive texlive-fonts-recommended
+
+RUN apt-get install -y ffmpeg \
+    libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libpostproc-dev libswresample-dev libswscale-dev
+
+# R package check requirements (ffmpeg-devel is from rpmfusion)
+RUN apt-get install -y \
+    libssl-dev libpng-dev libjpeg-dev libxml2-dev libgeos-dev libtiff-dev \
+    libfontconfig-dev fftw-dev librsvg2-dev openjdk-11-jdk libprotobuf-dev \
+    libsodium-dev libharfbuzz-dev libfribidi-dev libxslt1-dev libwebp-dev \
+    libmagick++-dev libmysqlclient-dev libzstd-dev libjq-dev libgmp-dev libglpk-dev libgsl-dev \
+    libnetcdf-dev libboost-all-dev libgpgme-dev libarchive-dev unixodbc-dev postgresql-server-dev-all \
+    libzmq3-dev librdf0-dev rrdtool libopencv-dev libsasl2-dev liblz4-dev \
+    libunwind-dev libpoppler-cpp-dev libpoppler-glib-dev libhiredis-dev libudunits2-dev \
+    libmpfr-dev libopenmpi-dev ocl-icd-dev libssh-dev libtesseract-dev
+
+# # tbb-devel
+
+# # R ymd needs Rust
+RUN apt-get install -y cargo
+
+# # XXX The following software must be installed in the order listed for dependency reasons.
+
+COPY install_lapack.sh /
+RUN bash /install_lapack.sh
+
+COPY install_jags.sh /
+RUN bash /install_jags.sh
+
+COPY install_symphony_clp.sh /
+RUN bash /install_symphony_clp.sh
+
+COPY install_sbml.sh /
+RUN bash /install_sbml.sh
+
+COPY install_quantlib.sh /
+RUN bash /install_quantlib.sh
+
+COPY install_openbugs.sh /
+RUN bash /install_openbugs.sh
+
+COPY install_proj.sh /
+RUN bash /install_proj.sh
+
+COPY install_gdal.sh /
+RUN bash /install_gdal.sh
+
+COPY install_mecab.sh /
+RUN bash /install_mecab.sh
+
+# # Non-Free: Oracle Free Use Terms and Conditions
+# COPY install_oracle_oci.sh /
+# RUN bash /install_oracle_oci.sh
+
+# # SYMPHONY, Clp, JAGS installs *.pc to /usr/local/lib/pkgconfig
+# # libSBML, Lapack, blas, GDAL, QuantLib (after CMake patch) installs *.pc to /usr/local/lib64/pkgconfig
+# ENV PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig/:/usr/local/lib/pkgconfig/:${PKG_CONFIG_PATH:-}"
+
+# # Most libraries also install to /usr/local/lib64 and /usr/local/lib
+# ENV LD_LIBRARY_PATH="/usr/local/lib64/:/usr/local/lib/:${LD_LIBRARY_PATH:-}"
+
+# # CMD tail -f /dev/null

@@ -1,0 +1,128 @@
+# FROM ubuntu:jammy AS build-pandoc
+# RUN apt-get update && apt-get upgrade -y
+# RUN apt-get install -y build-essential wget git curl
+# # Stack/GHC dependencies #  llvm-13
+# RUN apt-get install -y libnuma-dev libgmp3-dev
+# COPY install_ghcup.sh install_pandoc.sh install_pandoc-citeproc.sh /
+# # Make sure the non-suffixed LLVM13 bins are on PATH
+# # RUN export PATH="/usr/lib/llvm-13/bin/:${PATH:-}" && bash /install_ghcup.sh
+# # RUN export PATH="/usr/lib/llvm-13/bin/:${PATH:-}" && bash /install_pandoc.sh
+# # RUN export PATH="/usr/lib/llvm-13/bin/:${PATH:-}" && bash /install_pandoc-citeproc.sh
+# RUN bash /install_ghcup.sh
+# # RUN bash /install_pandoc.sh
+# RUN bash /install_pandoc-citeproc.sh
+
+# see https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-gcc
+FROM almalinux:8 AS base
+
+RUN echo "max_parallel_downloads=10" >>/etc/dnf/dnf.conf
+RUN dnf makecache --refresh && dnf update -y
+# XXX `which` is not included in the base, make sure it's there!
+# https://stackoverflow.com/questions/56449941/error-unable-to-load-r-code-in-package-graphics-when-compiling-r-3-6-0-on-lin
+RUN dnf install -y yum-utils epel-release wget git curl patch time which file
+RUN dnf config-manager --set-enabled powertools
+RUN dnf install -y --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+
+FROM base AS build-texlive
+
+COPY install_texlive.sh /
+RUN bash /install_texlive.sh "latest"
+
+FROM base AS build-required
+# Compilers
+RUN dnf install -y gcc gcc-c++ clang gcc-gfortran
+# R check script requirements (psmisc for fuser, Xvfb for X11)
+RUN dnf install -y Xvfb psmisc rsync bindfs
+# R build requirements
+RUN dnf install -y jq make automake cmake3 ninja-build file which python3 \
+    readline-devel libX11-devel libXt-devel zlib-devel bzip2-devel xz-devel \
+    pcre2-devel libcurl-devel libicu-devel tcl-devel tk-devel tre-devel
+# Make sure we have X11 fonts as well
+RUN dnf install -y xorg-x11-fonts-*
+# R package check requirements (ffmpeg-devel is from rpmfusion)
+RUN dnf install -y \
+    openssl-devel libpng-devel libjpeg-devel libxml2-devel geos-devel libtiff-devel \
+    fontconfig-devel fftw-devel librsvg2-devel java-11-openjdk-devel protobuf-devel \
+    libsodium-devel harfbuzz-devel fribidi-devel libxslt-devel libwebp-devel ffmpeg-devel \
+    ImageMagick-c++-devel mysql-devel libzstd-devel jq-devel gmp-devel glpk-devel gsl-devel \
+    netcdf-devel boost-devel gpgme-devel libarchive-devel unixODBC-devel postgresql-devel \
+    zeromq-devel redland-devel rrdtool-devel opencv-devel cyrus-sasl-devel lz4-devel \
+    libunwind-devel poppler-cpp-devel poppler-glib-devel hiredis-devel udunits2-devel \
+    mpfr-devel ocl-icd-devel libssh-devel tesseract-devel
+# tbb-devel ?
+
+# R ymd needs Rust
+RUN dnf install -y cargo
+
+# Hand-built libraries uses the /usr/local/ prefix so we set a few env vars for them to be visible.
+
+# SYMPHONY, Clp, JAGS installs *.pc to /usr/local/lib/pkgconfig
+# libSBML, Lapack, blas, GDAL, QuantLib (after CMake patch) installs *.pc to /usr/local/lib64/pkgconfig
+RUN echo 'export PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig/:/usr/local/lib/pkgconfig/:${PKG_CONFIG_PATH:-}"' | tee -a "/etc/profile" "/etc/bashrc"
+
+# Most libraries also install to /usr/local/lib64 and /usr/local/lib
+RUN echo 'export LD_LIBRARY_PATH="/usr/local/lib64/:/usr/local/lib/:${LD_LIBRARY_PATH:-}"' | tee -a "/etc/profile" "/etc/bashrc"
+
+# We set the bin path as well
+RUN echo 'export PATH="/usr/local/bin/:${PATH:-}"' | tee -a "/etc/profile" "/etc/bashrc"
+
+# XXX The following software must be installed in the order listed for dependency reasons.
+
+COPY install_lapack.sh /
+RUN bash /install_lapack.sh
+
+COPY install_jags.sh /
+RUN bash /install_jags.sh
+
+COPY install_symphony_clp.sh /
+RUN bash /install_symphony_clp.sh
+
+COPY install_sbml.sh /
+RUN bash /install_sbml.sh
+
+COPY install_quantlib.sh /
+RUN bash /install_quantlib.sh
+
+COPY install_openbugs.sh /
+RUN bash /install_openbugs.sh
+
+COPY install_proj.sh /
+RUN bash /install_proj.sh
+
+COPY install_gdal.sh /
+RUN bash /install_gdal.sh
+
+COPY install_mecab.sh /
+RUN bash /install_mecab.sh
+
+COPY install_openmpi.sh /
+RUN bash /install_openmpi.sh
+
+# Non-Free: Oracle Free Use Terms and Conditions
+COPY install_oracle_oci.sh /
+RUN bash /install_oracle_oci.sh
+
+# GMP and MPFR doesn't have *.pc on el8, we make one from scratch, see https://bugzilla.redhat.com/show_bug.cgi?id=1982816
+COPY patch_gmp.sh /
+RUN bash /patch_gmp.sh
+COPY patch_mpfr.sh /
+RUN bash /patch_mpfr.sh
+
+
+
+FROM base AS build-pandoc
+COPY install_pandoc.sh /
+RUN bash /install_pandoc.sh
+
+FROM build-required AS build-final
+
+# Our textlive install is under the "latest" prefix
+COPY --from=build-texlive /usr/local/texlive/ /usr/local/texlive
+RUN echo "export PATH=\"/usr/local/texlive/latest/bin/$(uname -m)-linux:\${PATH:-}\"" | tee -a "/etc/profile" "/etc/bashrc"
+
+COPY --from=build-pandoc \
+    /usr/local/bin/pandoc \
+    /usr/local/bin/pandoc-server \
+    /usr/local/bin/
+
+# CMD tail -f /dev/null
