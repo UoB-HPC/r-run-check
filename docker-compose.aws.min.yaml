@@ -1,0 +1,24 @@
+version: "3.3"
+services:
+  r-check-min:
+    container_name: r-check-min
+    privileged: false
+    devices:
+      - "/dev/fuse"
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - "persisted:/root"
+      - "/srv/CRAN_MIRROR/data/:/srv/R/Repositories:ro"
+      - "./src/:/root/src:ro"
+    restart: unless-stopped
+    build:
+      context: "./"
+      dockerfile: Dockerfile.almalinux.min
+volumes:
+  persisted:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "/srv/scratch/persisted"

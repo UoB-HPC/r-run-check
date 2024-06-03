@@ -12,7 +12,7 @@ abort() {
 
 name="$1"
 variant="gcc"
-r_flavour="r-devel"
+r_flavour="r-release"
 
 R_HOME="$("$HOME/tmp/R.check/$r_flavour-$variant/work/build/bin/R" RHOME)"
 export R_HOME
@@ -27,9 +27,11 @@ cd "$HOME/tmp/R.check/$r_flavour-$variant/work/build_dir" || exit 1
 echo "### Running install for $name"
 
 rm -rf "$name.install.out"
+rm -rf "$name.install.ts1"
+
 time make -f Makefile.install --always-make -n "$name.install.ts1"
 (
-    time make -f Makefile.install --always-make "$name.install.ts1" &
+    time make -f Makefile.install   "$name.install.ts1" &
     tail -F "$name.install.out"
 )
 echo "### Done install for $name"

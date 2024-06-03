@@ -1,0 +1,41 @@
+# see https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-gcc
+
+# aarch64 does not support -fcf-protection as it's implemeted via Intel CET in GCC
+
+__CFLAGS__ = \
+ -fexceptions \
+ -fstack-protector-strong \
+ -fstack-clash-protection \
+ -Werror=implicit-function-declaration \
+ -Wstrict-prototypes # -fcf-protection
+#  -Werror=format-security  XXX reenable after https://github.com/benilton/oligo/pull/1 is upstream in BioC
+__CXX_FLAGS__ = \
+ -Wno-ignored-attributes \
+ -Wno-parentheses \
+ -fexceptions \
+ -fstack-protector-strong \
+ -fstack-clash-protection # -fcf-protection
+#  -Werror=format-security \ XXX too many errors related to this
+
+
+override CFLAGS = -g -O2 -Wall -pedantic $(__CFLAGS__) $(LTO)
+override CXXFLAGS = -g -O2 -Wall -pedantic $(__CXX_FLAGS__) $(LTO)
+override CXX11FLAGS = -g -O2 -Wall -pedantic $(__CXX_FLAGS__) $(LTO)
+override CXX14FLAGS = -g -O2 -Wall -pedantic $(__CXX_FLAGS__) $(LTO)
+override CXX17FLAGS = -g -O2 -Wall -pedantic $(__CXX_FLAGS__) $(LTO)
+override CXX20FLAGS = -g -O2 -Wall -pedantic $(__CXX_FLAGS__) $(LTO)
+override FFLAGS = -g -O2 -Wall $(LTO)
+override FCFLAGS = -g -O2 -Wall $(LTO)
+
+
+override PICFLAGS = -fPIC
+override CPICFLAGS = -fPIC
+override CXXPICFLAGS = -fPIC
+override CXX11PICFLAGS = -fPIC
+override CXX14PICFLAGS = -fPIC
+override CXX17PICFLAGS = -fPIC
+override CXX20PICFLAGS = -fPIC
+
+override AR = gcc-ar
+override RANLIB = gcc-ranlib
+ 

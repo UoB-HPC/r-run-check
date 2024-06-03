@@ -2,25 +2,39 @@
 
 set -eu
 
-cd "/srv/scratch/persisted/tmp/R.check/r-release-gcc/work" || exit 1
+RMZ_BIN=$PWD/rmz
+
+cd "/srv/scratch/persisted/tmp/" || exit 1
 ls -lah
 
-name="ci-results-$(hostname)-$(date +"%d-%m-%Y")"
+name="ci-results-$(hostname)-$(date +"%d-%m-%Y_%H%M")"
 
 rm -rf "$name.tgz"
 rm -rf "$name"
-mkdir -p "$name/check"
-mkdir -p "$name/install"
 
-echo "Extracting results"
-time (
-    find build_dir -maxdepth 1 -name "*.check.out" -exec cp "{}" "$name/check/" \; &
-    find build_dir -maxdepth 1 -name "*.install.out" -exec cp "{}" "$name/install/" \; &
-    wait
-)
+mkdir -p "$name"
+# mkdir -p "$name/install"
+
+echo "Extracting results ..."
+
+time mv ./install_logs "$name" || true
+time mv ./check_logs "$name" || true
+time mv ./*.log "$name" || true
+time mv ./*.yml "$name" || true
+time mv ./*.json "$name" || true
+time mv ./Makevars.* "$name" || true
+
 echo "Compressing to $name.tgz"
-tar czf "$name.tgz" "$name"
-echo "Copying..."
-cp "$name.tgz" /nfs/home/wl14928/
-ls -lah "/nfs/home/wl14928/$name.tgz"
+time tar --use-compress-program="pigz --best --recursive | pv" -cf "$name.tgz" "$name"
+
+echo "Removing residuals..."
+time $RMZ_BIN -f ./*
+
+
+user_home=$(eval echo "~$SUDO_USER")
+echo "Unprivileged user is $SUDO_USER ($user_home)"
+echo "Moving $name to $user_home ..."
+mv "$name.tgz" "$user_home"
+chown "$SUDO_USER" "$user_home/$name.tgz"
+ls -lah "$user_home/$name.tgz"
 echo "Done"

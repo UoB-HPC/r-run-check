@@ -1,0 +1,182 @@
+rExe: "/root/r/dist/bin/R"
+checkRoot: "/root/tmp"
+reactorMemUsedToFreeRatio: 0.7
+reactorMemUsedToFreeThrottleRatio: 0.65
+reactorCpuLoadAverageToCoreRatio: 2
+reactorCpuLoadAverageToCoreThrottleRatio: 1.5
+reactorMaxParallel: 64
+reactorMaxParallelPerTask: 4
+reactorTimeout: 60 minutes
+reactorRetryDelay: 4 seconds
+reactorThrottleDelay: 2 seconds # let the task spin up before checking for load
+reactorRetry: 2
+mirrors:
+  - "/srv/R/Repositories/CRAN/"
+  - "/srv/R/Repositories/Bioconductor/3.19/data/experiment"
+  - "/srv/R/Repositories/Bioconductor/3.19/data/annotation"
+  - "/srv/R/Repositories/Bioconductor/3.19/bioc"
+configsDir: "./config"
+packageAllow: []
+packageIgnore:
+  - genekitr # Removed from CRAN on 2024-05-04, see https://cran.r-project.org/web/packages/genekitr/index.html
+  - MIRit # Depends on genekitr: https://bioconductor.org/checkResults/release/bioc-LATEST/MIRit/
+
+  - deconstructSigs # Removed from CRAN on 2024-05-14, see https://cran.r-project.org/web/packages/deconstructSigs/index.html
+  - musicatk # Depends on deconstructSigs: https://bioconductor.org/checkResults/release/bioc-LATEST/musicatk/
+
+  - mwcsr # Removed from CRAN on 2024-05-22, see https://cran.r-project.org/web/packages/mwcsr/index.html
+  - gatom # Depends on mwcsr: https://bioconductor.org/checkResults/release/bioc-LATEST/gatom/
+
+  - RWinEdt # --fake doesn't work; requires Win32 API: objects ‘readRegistry’, ‘winDialog’ are not exported by ‘namespace:utils’
+  - MediaNews # --fake doesn't work; requires Win32 API: object ‘setWinProgressBar’ is not exported by ‘namespace:utils’
+
+  - BiplotGUI # windows only, hangs even with --fake
+
+  # TODO
+  - lisaClust # object ‘cellAnnotation<-’ is not exported by ‘namespace:spicyR’
+  - easyRNASeq # no existing definition for function ‘type’
+  - msgbsR # Depends on easyRNASeq
+
+packageSerialIfDepends:
+  - AnnotationHub # this generates a DB in the same place for all packages, so don't schedule packages that need this concurrently
+
+packageWithX11:
+  - TTAinterfaceTrendAnalysis
+  - gWidgets2tcltk
+  - inventorize
+  - loon
+  - loon.ggplot
+  - loon.tourr
+  - loon.shiny
+  - diveR
+  - rfviz
+  - optbdmaeAT
+  - optrcdmaeAT
+  - patternplot
+  - soptdmaeA
+  - switchboard
+  - tkImgR
+  - iplots
+
+  - RcmdrPlugin.PcaRobust
+  - multibiplotGUI
+  - cncaGUI
+  - biplotbootGUI
+  - RclusTool
+  - uHMM
+  - MDSGUI
+
+
+packageInstallFlags:
+  # Windows only (most are from BioC?)
+  KeyboardSimulator: --fake
+  MDSGUI: --fake
+  R2PPT: --fake
+  R2wd: --fake
+  RInno: --fake
+  blatr: --fake
+  excel.link: --fake
+  rFUSION: --fake
+  spectrino: --fake
+  taskscheduleR: --fake
+  # Stoplist
+  RMark: --fake
+  ROracle: --fake
+  ora: --fake
+  Rcplex: --fake
+  cplexAPI: --fake
+  kmcudaR: --fake
+  permGPU: --fake
+  # Arch/dependency failures
+  HilbertVisGUI: --fake # requires gtkmm2.4, EL>=9 doesn't provide this, only gtkmm3.0
+  BRugs: --fake # Objective Pascal
+  Rblpapi: --fake # Needs Bloomberg's binary DSO to support arm64, works on Mac with Rosetta, see https://github.com/Rblp/Rblpapi/issues/363
+  # Pending upstream
+  FLAMES: --fake # was good before, broken in BioC 3.19: https://github.com/mritchielab/FLAMES/issues/7#issuecomment-2132489614
+  Rbec: --fake --no-test-load # waiting on merge for https://github.com/PengfanZhang/Rbec/issues/4
+  ymd: --fake # waiting for resolution of https://github.com/shrektan/ymd/issues/5
+  fcl: --fake # waiting for resolution of https://github.com/shrektan/fcl/issues/4
+  gmapR: --fake # tarball contains amd64 binary which make picks up, question asked at https://support.bioconductor.org/p/9158518/
+  string2path: --fake # waiting on update for https://github.com/yutannihilation/savvy/pull/71#issuecomment-2133805882, PR merged but release not cut
+  KSgeneral: --fake # uses non-portable mm_malloc.h, waiting on resolution of https://github.com/d-dimitrova/KSgeneral/issues/1
+  Rbeast: --fake # uses non-portable built-in __builtin_readcyclecounter, waiting on resolution of https://github.com/zhaokg/Rbeast/issues/29
+  # TODO
+  ROI.plugin.qpoases: --fake # Code doesn't compile???
+  # Special notes:
+  # gpuR: --no-test-load # resolved if we have at least one OpenCL platform => install pocl
+
+packageCheckFlags: {}
+
+packageDependsPriority:
+  rstan: 65536 # very slow, start early
+  FlexReg: 65536 # very slow, start early
+  rts2: 65536 # very slow, start early
+  blavaan: 65536 # very slow, start early
+  ctsem: 65536 # very slow, start early
+  gpuR: 65536 # very slow, start early
+  BayesXsrc: 65536 # very slow, start early
+  conStruct: 65536 # very slow, start early
+  historicalborrowlong: 65536 # very slow, start early
+  gllvm: 65536 # very slow, start early
+  pharmaverseadam: 65536 # very slow, start early
+  gadget2: 65536 # very slow, start early
+  redist: 65536 # very slow, start early
+  jfa: 65536 # very slow, start early
+  networkscaleup: 65536 # very slow, start early
+  rstantools: 65536 # is a Depends but listed as Suggests: rmsb,bbmix,gastempt,disbayes,tipsae,TriDimRegression to break cycle
+
+packageEnvs:
+  mongolite: # https://github.com/jeroen/mongolite/blob/master/src/Makevars.in ends up have ar on the same file in parallel
+    MAKEFLAGS: -j1
+  Rbwa: # https://github.com/crisprVerse/Rbwa/blob/master/src/Makefile ends up have ar on the same file in parallel
+    MAKEFLAGS: -j1
+  Rhisat2: # Possible race condition, see https://github.com/fmicompbio/Rhisat2/issues/2#issuecomment-2132498984
+    MAKEFLAGS: -j1
+  bgx: # Possible race condition when extracting boost and compiling at the same time
+    MAKEFLAGS: -j1
+  QuickJSR: # Possible race condition when extracting and compiling at the same time
+    MAKEFLAGS: -j1
+  rgoslin: # Possible race condition when extracting and compiling at the same time
+    MAKEFLAGS: -j1
+  gmapR: # Possible race condition when extracting and compiling at the same time
+    MAKEFLAGS: -j1
+  cubature: # Possible race condition when extracting and compiling at the same time
+    MAKEFLAGS: -j1
+  pbdSLAP: # ar on the same files called in parallel
+    MAKEFLAGS: -j1
+  ECOSolveR: # ar on the same files called in parallel
+    MAKEFLAGS: -j1
+  CSTools: # Fortran module created in parallel so race condition
+    MAKEFLAGS: -j1
+  tseries: # Fortran module created in parallel so race condition
+    MAKEFLAGS: -j1
+  RGN: # Fortran module created in parallel so race condition
+    MAKEFLAGS: -j1
+
+  # FlexReg: # Otherwise too slow
+  #   MAKEFLAGS: -j4
+  # rts2: # Otherwise too slow
+  #   MAKEFLAGS: -j4
+
+packageMakevars:
+  vol2birdR: # PROJ detection comes back with empty string so we get: undefined symbol: pj_release, related to https://github.com/adokter/vol2birdR/issues/27
+    LDFLAGS: -lproj
+  dbarts: # See https://github.com/vdorie/dbarts/issues/66, remove if added to Makevars upstream
+    CFLAGS: $(CFLAGS) -flax-vector-conversions
+  OpenCL: # Remove once https://github.com/s-u/OpenCL/pull/22 gets merged
+    CFLAGS: $(CFLAGS) -include stdlib.h
+  gamstransfer: # gdx/src/gdlib/gmsstrm.cpp:136:72: error: narrowing conversion of ‘-1’ from ‘std::char_traits<char>::int_type’ {aka ‘int’} to ‘char’ [-Wnarrowing]
+    CXXFLAGS: $(CXXFLAGS) -Wno-narrowing
+  rmarchingcubes: # gdx/src/gdlib/gmsstrm.cpp:136:72: error: narrowing conversion of ‘-1’ from ‘std::char_traits<char>::int_type’ {aka ‘int’} to ‘char’ [-Wnarrowing]
+    CXXFLAGS: $(CXXFLAGS) -Wno-narrowing
+
+  # -flax-vector-conversions
+
+  # cubature:  --preclean --debug
+  # Hangs
+  # RcmdrPlugin.PcaRobust: --fake --no-byte-compile --no-test-load
+  # multibiplotGUI: --fake --no-byte-compile --no-test-load
+  # cncaGUI: --fake --no-byte-compile --no-test-load
+  # biplotbootGUI: --fake --no-byte-compile --no-test-load
+  # RclusTool: --fake --no-byte-compile --no-test-load
+  # uHMM: --fake --no-byte-compile --no-test-load

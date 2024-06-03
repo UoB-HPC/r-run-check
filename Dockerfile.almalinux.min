@@ -1,0 +1,40 @@
+# see https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-gcc
+FROM almalinux:8 AS base
+
+RUN echo "max_parallel_downloads=10" >>/etc/dnf/dnf.conf
+RUN dnf makecache --refresh && dnf update -y
+# XXX `which` is not included in the base, make sure it's there!
+# https://stackoverflow.com/questions/56449941/error-unable-to-load-r-code-in-package-graphics-when-compiling-r-3-6-0-on-lin
+RUN dnf install -y yum-utils epel-release wget git curl patch time which file
+RUN dnf config-manager --set-enabled powertools
+RUN dnf install -y --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+
+# FROM base AS build-texlive
+
+# COPY install_texlive.sh /
+# RUN bash /install_texlive.sh "latest"
+
+FROM base AS build-required
+# Compilers
+RUN dnf install -y gcc gcc-c++ gcc-gfortran
+# R build requirements
+RUN dnf install -y make \
+    readline-devel libX11-devel libXt-devel \
+    pcre2-devel libcurl-devel libicu-devel tcl-devel tk-devel libpng-devel libjpeg-devel openblas-devel
+
+FROM base AS build-pandoc
+COPY install_pandoc.sh /
+RUN bash /install_pandoc.sh
+
+FROM build-required AS build-final
+
+# Our textlive install is under the "latest" prefix
+# COPY --from=build-texlive /usr/local/texlive/ /usr/local/texlive
+# RUN echo "export PATH=\"/usr/local/texlive/latest/bin/$(uname -m)-linux:\${PATH:-}\"" | tee -a "/etc/profile" "/etc/bashrc"
+
+COPY --from=build-pandoc \
+    /usr/local/bin/pandoc \
+    /usr/local/bin/pandoc-server \
+    /usr/local/bin/
+
+# CMD tail -f /dev/null

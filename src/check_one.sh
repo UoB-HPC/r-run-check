@@ -29,8 +29,8 @@ echo "### Running check for $name"
 rm -rf "$name.check.out"
 # killall tail
 time make -f Makefile.check --always-make -n "$name.check.ts1"
-(
-    time make -f Makefile.check --always-make "$name.check.ts1" &
-    tail -F "$name.check.out"
-)
+# (
+#     time make -f Makefile.check --always-make "$name.check.ts1" &
+#     tail -F "$name.check.out"
+# )
 echo "### Done check for $name"

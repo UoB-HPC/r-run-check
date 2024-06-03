@@ -8,8 +8,8 @@ r_flavour="r-release"
 cran_dir="/srv/R/Repositories/CRAN"
 check_dir="$HOME/tmp/R.check"
 check_flavor="$r_flavour-$variant"
-n_jobs=$(($(nproc) + 8))
-build_r=true
+n_jobs=$(( $(nproc) + 4 ))
+build_r=false
 
 script_dir=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 

@@ -282,7 +282,7 @@ download_remote_deps <- function(pkg_and_deps, available) {
 
 
 generate_pkg_makefile <- function(pkg_and_deps, suffix, libdir, timeout, cmd_fn, deps_fn) {
-    env_make_flags <- sprintf("/usr/bin/env MAKEFLAGS= R_LIBS_USER=%s", shQuote(libdir))
+    env_make_flags <- sprintf("/usr/bin/env MAKEFLAGS=-j%s R_LIBS_USER=%s", 1, shQuote(libdir))
     timeout_cmd <- sprintf("%s %s", Sys.which("timeout"), timeout)
     r_exe <- shQuote(file.path(R.home("bin"), "R"))
     # base_r_cmd <- sprintf("%s %s %s", env_make_flags, xvfb_run, timeout_cmd)
@@ -380,6 +380,12 @@ pfiles <- sub(
     sprintf("%s/%s_%s.tar.gz", available[, "Repository"], available[, "Package"], available[, "Version"])
 )
 available <- cbind(available, Path = pfiles)
+
+
+# write.csv(available,"~/available.csv")
+
+# stop()
+
 
 ## Unpack all CRAN packages to simplify checking via Make.
 ind <- startsWith(available[, "Repository"], repos["CRAN"])
@@ -534,7 +540,10 @@ write_file(file.path(build_dir, "Makefile.check"), generate_pkg_makefile(
     function(deps) "" # No dependencies needed for checking, run everything in parallel.
 ))
 
-system(sprintf("cd %s && make -f Makefile.install -k -j %s ", shQuote(build_dir), Ncpus_i))
+buildstr <- sprintf("cd %s && make -f Makefile.install -k -j %s", shQuote(build_dir), Ncpus_i)
+message("Starting build...")
+message("CMD=", buildstr)
+system(buildstr)
 system(sprintf("cd %s && make -f Makefile.check -k -j %s ", shQuote(build_dir), Ncpus_i))
 
 stop()

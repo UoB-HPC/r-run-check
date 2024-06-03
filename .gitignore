@@ -187,3 +187,5 @@ typings/
 # dotenv environment variables file
 .env
 
+rmz
+.vscode/

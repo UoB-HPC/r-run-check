@@ -1,43 +1,36 @@
 #!/usr/bin/env bash
 
-# Bioconductor appears to only support SSH for mirroring and we'll need to send our key to use master.bioconductor.org
-# Because of this, we must use 3rd party ones, see https://bioconductor.org/about/mirrors/
-# BioC_MIRROR="mirrors.dotsrc.org::bioconductor"
-# BioC_MIRROR="ftp.gwdg.de::pub/misc/bioconductor"
-# BioC_MIRROR="mirror.aarnet.edu.au::pub/bioconductor"
+PARALLEL=32
+BIOC_VERSION="3.19"
 
-# CRAN_MIRROR="cran.r-project.org::CRAN"
-# CRAN_MIRROR="ftp.gwdg.de::pub/misc/cran"
-# CRAN_MIRROR="cran.csie.ntu.edu.tw::CRAN"
+# BIOC_MIRROR="https://mirrors.dotsrc.org"
+# CRAN_MIRROR="https://mirrors.dotsrc.org"
 
-BioC_MIRROR="mirrors.dotsrc.org::bioconductor"
-CRAN_MIRROR="cran.r-project.org::CRAN"
-BioC_DEST="$HOME/CRAN_MIRROR/data/Bioconductor"
-CRAN_DEST="$HOME/CRAN_MIRROR/data/CRAN"
+BIOC_MIRROR="https://ftp.gwdg.de"
+CRAN_MIRROR="https://ftp.gwdg.de"
 
-# CRAN_MIRROR="cran.csie.ntu.edu.tw::CRAN"
-# BioC_MIRROR="mirror.aarnet.edu.au::pub/bioconductor"
-# BioC_DEST="/media/tom/CRAN_MIRROR/data/Bioconductor"
-# CRAN_DEST="/media/tom/CRAN_MIRROR/data/CRAN"
+DEST=${1:-"$HOME/r-contrib"}
 
 do_sync() {
-    local from=$1
-    local to=$2
+    local mirror=$1
+    local from=$2
+    local to=$3
+
     mkdir -p "$to"
-    rsync -rptlzv --info=progress2 --delete "$from" "$to"
+
+    rclone sync \
+        --http-url "$mirror" \
+        ":http:$from" \
+        "$to" \
+        --progress --delete-before --transfers=$PARALLEL --checkers=$((PARALLEL * 4)) -L
+
 }
 
-(
-    # BioC 3.15 
-    do_sync "$BioC_MIRROR/packages/3.15/bioc/src/contrib" "$BioC_DEST/3.15/bioc/src" &
-    do_sync "$BioC_MIRROR/packages/3.15/data/experiment/src/contrib" "$BioC_DEST/3.15/data/experiment/src" &
-    do_sync "$BioC_MIRROR/packages/3.15/data/annotation/src/contrib" "$BioC_DEST/3.15/data/annotation/src" &
-    # BioC 3.16 
-    do_sync "$BioC_MIRROR/packages/3.16/bioc/src/contrib" "$BioC_DEST/3.16/bioc/src" &
-    do_sync "$BioC_MIRROR/packages/3.16/data/experiment/src/contrib" "$BioC_DEST/3.16/data/experiment/src" &
-    do_sync "$BioC_MIRROR/packages/3.16/data/annotation/src/contrib" "$BioC_DEST/3.16/data/annotation/src" &
-    # CRAN
-    do_sync "$CRAN_MIRROR/src/contrib" "$CRAN_DEST/src" &
-wait
-)
+# BioC
+do_sync "$BIOC_MIRROR" "pub/misc/bioconductor/packages/$BIOC_VERSION/bioc/src/contrib" "$DEST/bioconductor/packages/$BIOC_VERSION/bioc/src/contrib"
+do_sync "$BIOC_MIRROR" "pub/misc/bioconductor/packages/$BIOC_VERSION/data/experiment/src/contrib" "$DEST/bioconductor/packages/$BIOC_VERSION/data/experiment/src/contrib"
+do_sync "$BIOC_MIRROR" "pub/misc/bioconductor/packages/$BIOC_VERSION/data/annotation/src/contrib" "$DEST/bioconductor/packages/$BIOC_VERSION/data/annotation/src/contrib"
+
+# CRAN
+do_sync "$CRAN_MIRROR" "pub/misc/cran/src/contrib" "$DEST/cran/src/contrib"
 echo "Done!"

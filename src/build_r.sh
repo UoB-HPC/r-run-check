@@ -90,10 +90,10 @@ echo "Compiler:      ${variant[*]}"
         mv "${wd:?}"/* "$wd/src"
 ) || (echo "Failed to download and untar $R_source_url to src" && exit 1)
 
-(# Link recommended packages.
-    cd "$wd/src/" &&
-        CRAN_RSYNC="${CRAN_rsync}" ./tools/rsync-recommended
-)
+# (# Link recommended packages.
+#     cd "$wd/src/" &&
+#         CRAN_RSYNC="${CRAN_rsync}" ./tools/rsync-recommended
+# )
 
 (rm -rf "$prefix" && mkdir "$prefix") || (echo "Cannot clear prefix: $prefix" && exit 1)
 
@@ -108,10 +108,10 @@ if [[ -f "/usr/share/texinfo/htmlxref.cnf" ]]; then
 fi
 
 (cd "$prefix" && make -j "$(nproc)")
-(cd "$prefix" && make check)
-(cd "$prefix" && make pdf)
+# (cd "$prefix" && make check)
+# (cd "$prefix" && make pdf)
 
-(cd "$prefix/doc/manual" && make fullrefman.pdf)
-(cd "$prefix/doc" && make docs2)
+# (cd "$prefix/doc/manual" && make fullrefman.pdf)
+# (cd "$prefix/doc" && make docs2)
 # (cd "$prefix/doc/manual" && make epub)
 echo "Done"

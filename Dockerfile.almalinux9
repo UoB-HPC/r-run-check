@@ -13,22 +13,21 @@
 # RUN bash /install_pandoc-citeproc.sh
 
 # see https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-gcc
-FROM almalinux:8 AS base
+FROM almalinux:9.4 AS base
 
 RUN echo "max_parallel_downloads=10" >>/etc/dnf/dnf.conf
 RUN dnf makecache --refresh && dnf update -y
 # XXX `which` is not included in the base, make sure it's there!
 # https://stackoverflow.com/questions/56449941/error-unable-to-load-r-code-in-package-graphics-when-compiling-r-3-6-0-on-lin
-RUN dnf install -y yum-utils epel-release wget git curl patch time which file
-RUN dnf config-manager --set-enabled powertools
+RUN dnf install -y yum-utils epel-release wget git patch time which file
+RUN dnf config-manager --set-enabled crb
 RUN dnf install -y --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
 
-FROM base AS build-texlive
+# FROM base AS build-texlive
 
-RUN dnf install -y rclone
-COPY install_texlive.sh /
-RUN bash /install_texlive.sh "latest" 
-RUN rm -rf /CTAN
+# RUN dnf install -y rclone
+# COPY install_texlive.sh /
+# RUN bash /install_texlive.sh "latest"
 
 FROM base AS build-required
 # Compilers
@@ -50,7 +49,9 @@ RUN dnf install -y \
     netcdf-devel boost-devel gpgme-devel libarchive-devel unixODBC-devel postgresql-devel \
     zeromq-devel redland-devel rrdtool-devel opencv-devel cyrus-sasl-devel lz4-devel \
     libunwind-devel poppler-cpp-devel poppler-glib-devel hiredis-devel udunits2-devel \
-    mpfr-devel ocl-icd-devel libssh-devel tesseract-devel libgit2-devel
+    mpfr-devel ocl-icd-devel libssh-devel tesseract-devel libgit2-devel mono-core \
+    openbabel-devel eigen3-devel grpc-devel fluidsynth-devel glibc-gconv-extra pocl \
+    latexmk texlive-l3packages texlive-collection-fontsrecommended texlive-epstopdf-pkg
 # tbb-devel ?
 
 # R ymd needs Rust
@@ -100,17 +101,21 @@ RUN bash /install_mecab.sh
 COPY install_openmpi.sh /
 RUN bash /install_openmpi.sh
 
+COPY install_tiledb.sh /
+RUN bash /install_tiledb.sh
+
+COPY install_inconsolata.sh /
+RUN bash /install_inconsolata.sh
+
 # Non-Free: Oracle Free Use Terms and Conditions
 COPY install_oracle_oci.sh /
 RUN bash /install_oracle_oci.sh
 
 # GMP and MPFR doesn't have *.pc on el8, we make one from scratch, see https://bugzilla.redhat.com/show_bug.cgi?id=1982816
-COPY patch_gmp.sh /
-RUN bash /patch_gmp.sh
-COPY patch_mpfr.sh /
-RUN bash /patch_mpfr.sh
-
-
+# COPY patch_gmp.sh /
+# RUN bash /patch_gmp.sh
+# COPY patch_mpfr.sh /
+# RUN bash /patch_mpfr.sh
 
 FROM base AS build-pandoc
 COPY install_pandoc.sh /
@@ -119,12 +124,12 @@ RUN bash /install_pandoc.sh
 FROM build-required AS build-final
 
 # Our textlive install is under the "latest" prefix
-COPY --from=build-texlive /usr/local/texlive/ /usr/local/texlive
-RUN echo "export PATH=\"/usr/local/texlive/latest/bin/$(uname -m)-linux:\${PATH:-}\"" | tee -a "/etc/profile" "/etc/bashrc"
+# COPY --from=build-texlive /usr/local/texlive/ /usr/local/texlive
+# RUN echo "export PATH=\"/usr/local/texlive/latest/bin/$(uname -m)-linux:\${PATH:-}\"" | tee -a "/etc/profile" "/etc/bashrc"
 
-COPY --from=build-pandoc \
-    /usr/local/bin/pandoc \
-    /usr/local/bin/pandoc-server \
-    /usr/local/bin/
+# COPY --from=build-pandoc \
+#     /usr/local/bin/pandoc \
+#     /usr/local/bin/pandoc-server \
+#     /usr/local/bin/
 
 # CMD tail -f /dev/null
