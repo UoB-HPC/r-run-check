@@ -98,8 +98,10 @@ RUN bash /install_gdal.sh
 COPY install_mecab.sh /
 RUN bash /install_mecab.sh
 
-COPY install_openmpi.sh /
-RUN bash /install_openmpi.sh
+# COPY install_openmpi.sh /
+# RUN bash /install_openmpi.sh
+
+RUN dnf install -y openmpi-devel
 
 COPY install_tiledb.sh /
 RUN bash /install_tiledb.sh

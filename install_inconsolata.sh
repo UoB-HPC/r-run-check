@@ -8,9 +8,9 @@ cd
 wget https://raw.githubusercontent.com/googlefonts/Inconsolata/main/fonts/ttf/Inconsolata-Regular.ttf
 wget https://raw.githubusercontent.com/googlefonts/Inconsolata/main/fonts/ttf/Inconsolata-Bold.ttf
 mv Inconsolata-Regular.ttf Inconsolata-Bold.ttf /usr/share/fonts
-fc-cache /usr/share/fonts
+fc-cache /usr/share/fonts --verbose
 
-wget -q http://mirrors.ctan.org/install/fonts/inconsolata.tds.zip
+wget https://mirrors.dotsrc.org/ctan/install/fonts/inconsolata.tds.zip
 rm -rf inconsolata && mkdir -p inconsolata
 unzip inconsolata.tds.zip -d inconsolata
 cp -r inconsolata/* /usr/share/texmf

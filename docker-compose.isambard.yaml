@@ -1,0 +1,20 @@
+version: "3.3"
+services:
+  r-check:
+    container_name: r-check
+    privileged: false
+    volumes:
+      - "persisted:/root"
+      - "$HOME/r-contrib/data/:/srv/R/Repositories:ro"
+      - "./src/:/root/src:ro"
+    restart: unless-stopped
+    build:
+      context: "./"
+      dockerfile: Dockerfile.almalinux9  
+volumes:
+  persisted:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "$HOME/r-ci-persisted"
